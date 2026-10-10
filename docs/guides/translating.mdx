@@ -25,7 +25,7 @@ If your language has no proofreader, or you want to become one, ask in the Crowd
 
 ## Placeholders and plurals
 
-Keep placeholders and plural separators exactly as they are in the English string.
+Keep placeholders exactly as they are in the English string.
 
 - **Placeholders** start with a `:` and get replaced with a value. Don't translate or remove them, but you can move them around in the sentence.
 
@@ -33,7 +33,7 @@ Keep placeholders and plural separators exactly as they are in the English strin
     'greeting' => 'Hello :name!',
     ```
 
-- **Plurals** are separated by `|`. The first part is the singular, the second the plural. Keep the `|` and translate both parts.
+- **Plurals** are separated by `|`. In English the first part is the singular and the second the plural. Use as many forms as your language needs, in the order your language's plural rules expect. Explicit ranges like `{0} No files|[1,*] :count files` work too.
 
     ```php
     'model_label' => 'Backup Host|Backup Hosts',

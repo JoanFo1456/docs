@@ -56,20 +56,20 @@ sudo cp .env ~/pterodactyl-backup.env
 grep '^DB_' .env
 ```
 
-Back up the database using the `DB_HOST`, `DB_PORT`, `DB_USERNAME` and `DB_DATABASE` values shown above, and enter `DB_PASSWORD` when asked.
-
-```sh
-mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction <DB_DATABASE> > ~/pterodactyl-backup.sql
-```
-
-Check that `~/pterodactyl-backup.sql` isn't empty before continuing.
-
-Stop the Pterodactyl queue worker and remove its cron job, so it doesn't run jobs against the database while it is being migrated.
+Stop the Pterodactyl queue worker and remove its cron job, so no jobs write to the database during the backup and migration.
 
 ```sh
 sudo systemctl disable --now pteroq
 sudo crontab -e   # remove the line running /var/www/pterodactyl/artisan schedule:run
 ```
+
+Back up the database using the `DB_HOST`, `DB_PORT`, `DB_USERNAME` and `DB_DATABASE` values shown above, and enter `DB_PASSWORD` when asked.
+
+```sh
+mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction --no-tablespaces <DB_DATABASE> > ~/pterodactyl-backup.sql && echo "Backup complete"
+```
+
+Only continue if it prints `Backup complete`. Any error means the backup is incomplete.
 
 ### Install Pelican
 
@@ -115,6 +115,8 @@ Continue with the Pelican docs from here:
     (sudo crontab -l -u www-data 2>/dev/null; echo "* * * * * php /var/www/pelican/artisan schedule:run >> /dev/null 2>&1") | sudo crontab -u www-data -
     ```
 
+    On Rocky Linux, use `nginx` or `apache` instead of `www-data`, like in [Set permissions](../panel/panel-setup).
+
 4. Bring the Panel up:
 
     ```sh
@@ -130,8 +132,12 @@ Do this on every node. Pelican Wings replaces the Pterodactyl Wings binary and r
 ```sh
 sudo systemctl stop wings
 
+# Keep the Pterodactyl binary and service for rolling back
+sudo cp /usr/local/bin/wings ~/wings.pterodactyl
+sudo cp /etc/systemd/system/wings.service ~/wings.service.pterodactyl
+
 # Replace the binary
-sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
+sudo curl --fail -L -o /usr/local/bin/wings "https://github.com/pelican/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
 sudo chmod u+x /usr/local/bin/wings
 
 # Move the config
@@ -162,7 +168,7 @@ If your Panel URL changed, update `remote` in `config.yml` as well.
 
 If something goes wrong, your Pterodactyl install is still in `/var/www/pterodactyl`. To go back:
 
-1. Stop the Pelican queue worker (`sudo systemctl disable --now pelican-queue`), and remove the Pelican cron job (`sudo crontab -e -u www-data`).
+1. Take Pelican offline (`sudo php artisan down` in `/var/www/pelican`), stop the Pelican queue worker (`sudo systemctl disable --now pelican-queue`), and remove the Pelican cron job (`sudo crontab -e -u www-data`, or your webserver user).
 2. Restore the database backup, using the same connection details as the backup (from `~/pterodactyl-backup.env`):
 
     ```sh
@@ -173,4 +179,4 @@ If something goes wrong, your Pterodactyl install is still in `/var/www/pterodac
     Double-check `<DB_DATABASE>` before running this, the first command deletes that database.
 
 3. Re-enable the Pterodactyl webserver site, cron job and `pteroq` service, then run `php artisan up` in `/var/www/pterodactyl`.
-4. On the nodes, put the Pterodactyl Wings binary back and restore the old `wings.service`.
+4. On the nodes, stop Wings, copy `~/wings.pterodactyl` back to `/usr/local/bin/wings` and `~/wings.service.pterodactyl` back to `/etc/systemd/system/wings.service`, then run `sudo systemctl daemon-reload` and start Wings.
