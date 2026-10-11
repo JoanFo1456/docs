@@ -276,12 +276,15 @@ on_error() {
 trap on_error ERR
 run() { step="$1"; echo; echo "==> $1"; }
 
+# True if the user's crontab has an uncommented line containing this literal text.
+has_cron() { crontab -l -u "$1" 2>/dev/null | awk -v s="$2" 'index($0, s) && $0 !~ /^[[:space:]]*#/ { found = 1 } END { exit !found }'; }
+
 run "Stopping Pterodactyl"
 (cd "$ptero_dir" && php artisan down)
 $has_pteroq && systemctl disable --now pteroq
 for cron_user in root "$web_user"; do
-  if crontab -l -u "$cron_user" 2>/dev/null | grep -q "^[^#].*$ptero_dir/artisan schedule:run"; then
-    crontab -l -u "$cron_user" | sed "\|^[^#].*$ptero_dir/artisan schedule:run|s|^|# |" | crontab -u "$cron_user" -
+  if has_cron "$cron_user" "$ptero_dir/artisan schedule:run"; then
+    crontab -l -u "$cron_user" | awk -v s="$ptero_dir/artisan schedule:run" 'index($0, s) && $0 !~ /^[[:space:]]*#/ { $0 = "# " $0 } { print }' | crontab -u "$cron_user" -
     echo "Disabled the Pterodactyl cron job for $cron_user"
   fi
 done
@@ -310,7 +313,7 @@ systemctl is-active --quiet pelican-queue
 
 run "Setting up the cron job"
 cron_line="* * * * * php $PELICAN_DIR/artisan schedule:run >> /dev/null 2>&1"
-if ! crontab -l -u "$web_user" 2>/dev/null | grep -qF "$PELICAN_DIR/artisan schedule:run"; then
+if ! has_cron "$web_user" "$PELICAN_DIR/artisan schedule:run"; then
   (crontab -l -u "$web_user" 2>/dev/null || true; echo "$cron_line") | crontab -u "$web_user" -
 fi
 
