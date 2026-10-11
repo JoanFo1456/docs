@@ -57,7 +57,7 @@ done
 
 read -rp "Pterodactyl directory [/var/www/pterodactyl]: " ptero_dir
 ptero_dir=${ptero_dir:-/var/www/pterodactyl}
-ptero_dir=${ptero_dir%/}
+ptero_dir=$(realpath -m "$ptero_dir")
 env_file="$ptero_dir/.env"
 
 env_get() { { grep -E "^$1=" "$env_file" || true; } | tail -n1 | cut -d= -f2- | sed -E "s/^\"(.*)\"\$/\1/; s/^'(.*)'\$/\1/"; }
