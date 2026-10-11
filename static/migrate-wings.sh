@@ -96,8 +96,9 @@ echo
 echo "This node connects to the Panel at: $remote"
 read -rp "New Panel URL, if it changed (leave empty to keep it): " new_remote
 new_remote=${new_remote%/}
-if [ -n "$new_remote" ] && [[ ! "$new_remote" =~ ^https?:// ]]; then
-  echo "The Panel URL must start with http:// or https://" >&2
+# Strict on purpose: the URL ends up in a sed replacement and a YAML value.
+if [ -n "$new_remote" ] && [[ ! "$new_remote" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?$ ]]; then
+  echo "That doesn't look like a Panel URL. Use something like https://panel.example.com" >&2
   exit 1
 fi
 
