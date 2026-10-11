@@ -237,7 +237,6 @@ case "$db_connection" in
   sqlite)
     db_database=$(env_get DB_DATABASE)
     db_database="${db_database:-database.sqlite}"
-    [[ "$db_database" == *.sqlite ]] || db_database="$db_database.sqlite"
     if [[ "$db_database" == /* ]]; then db_file="$db_database"; else db_file="$install_dir/database/$db_database"; fi
     [[ -f "$db_file" ]] || errors+=("SQLite database $db_file not found")
     ;;
