@@ -55,6 +55,14 @@ else
     grep -qE "^$key:" "$OLD_CONFIG" || missing+=("$key")
   done
   [ ${#missing[@]} -eq 0 ] && ok "Found $OLD_CONFIG" || fail "$OLD_CONFIG is missing: ${missing[*]}"
+
+  # Pelican Wings has different defaults (/var/lib/pelican, user pelican), so these must be spelled out.
+  # Pterodactyl Wings writes them on every start.
+  missing=()
+  for key in root_directory data username; do
+    grep -qE "^\s+$key:" "$OLD_CONFIG" || missing+=("system.$key")
+  done
+  [ ${#missing[@]} -eq 0 ] && ok "Data paths and user are set in $OLD_CONFIG" || fail "$OLD_CONFIG doesn't set ${missing[*]}. Start Pterodactyl Wings once so it writes its full config, then run this again."
 fi
 
 [ -x "$WINGS_BIN" ] && ok "Found $WINGS_BIN" || fail "$WINGS_BIN does not exist."
