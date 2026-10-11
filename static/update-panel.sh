@@ -143,11 +143,12 @@ done
 fail_on_errors
 
 [[ -n "$install_dir" ]] || ask install_dir "Enter the directory for the panel location" /var/www/pelican
-install_dir="${install_dir%/}"
 for f in artisan .env config/app.php; do
   [[ -e "$install_dir/$f" ]] || errors+=("$install_dir/$f not found, is this a Pelican panel install?")
 done
 fail_on_errors
+# Absolute, so paths stay right after the cd below (a relative --dir would otherwise point rsync at a nested dir).
+install_dir=$(cd "$install_dir" && pwd -P)
 
 # storage/ is never synced and must be writable by the web server, so its owner is the reliable default.
 [[ -n "$owner" ]] || ask owner "Enter the owner of the files (www-data, apache, nginx)" "$(stat -c '%U' "$install_dir/storage")"
@@ -295,7 +296,11 @@ if [[ -d "$install_dir/storage/app/public" ]]; then
   echo "  Backed up storage/app/public"
 fi
 if [[ -n "$db_file" ]]; then
-  cp -a "$db_file" "$backup_dir/$(basename "$db_file").backup"
+  # VACUUM INTO gives a consistent copy (including WAL contents) while the panel is still online;
+  # it uses PHP's pdo_sqlite, which the panel already needs, so no sqlite3 CLI is required.
+  # shellcheck disable=SC2016
+  php -r '$db = new PDO("sqlite:" . $argv[1]); $db->exec("VACUUM INTO " . $db->quote($argv[2]));' \
+    "$db_file" "$backup_dir/$(basename "$db_file").backup"
   echo "  Backed up SQLite database"
 elif [[ -n "$dump_cmd" ]]; then
   db_host=$(env_get DB_HOST)
@@ -324,10 +329,15 @@ fi
 echo "Updating panel files..."
 # Set before rsync: if it fails halfway, the files are already mixed and the panel must stay down.
 files_synced=true
+db_excludes=()
+if [[ "$db_file" == "$install_dir/"* ]]; then
+  # An SQLite file kept somewhere else inside the install (absolute DB_DATABASE) must survive --delete too.
+  db_excludes=(--exclude="/${db_file#"$install_dir"/}" --exclude="/${db_file#"$install_dir"/}-*")
+fi
 rsync -a --no-owner --no-group --delete \
   --exclude=/.env --exclude=/storage/ --exclude=/plugins/ --exclude=/vendor/ \
   --exclude=/node_modules/ --exclude='/backup*' --exclude='/database/*.sqlite*' \
-  --exclude=/public/storage \
+  --exclude=/public/storage "${db_excludes[@]}" \
   "$tmp/stage/" "$install_dir/"
 # Add any new storage folders from the release without touching existing files.
 rsync -a --no-owner --no-group --ignore-existing "$tmp/stage/storage/" "$install_dir/storage/"
