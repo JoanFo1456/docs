@@ -6,21 +6,37 @@ import TabItem from '@theme/TabItem';
 
 This documentation covers the process for updating the panel portion of Pelican.
 
+<Admonition type="tip" title="Coming from Pterodactyl?">
+    Updating from Pterodactyl works differently, follow [Migrating from Pterodactyl](../guides/migrating-from-pterodactyl) instead.
+</Admonition>
+
+Before updating, check the release notes on [GitHub](https://github.com/pelican/panel/releases). See [Versioning & Releases](../versioning) for what can change between versions.
+
 ## Version Requirements
 
 Each version of Pelican Panel also has a corresponding minimum version of Wings that is required for it to run.
 
 Please see the chart below for how these versions line up.
 
-| Panel Version | Wings Version | Supported | PHP Version |
-|:-------------:|:-------------:|:---------:|:-----------:|
-|      1.x      |      1.x      |    ✅︎     | 8.2/8.3/8.4 |
+| Panel Version | Wings Version | Supported | PHP Version     |
+|:-------------:|:-------------:|:---------:|:---------------:|
+|      1.x      |      1.x      |    ✅︎     |     8.5/8.4     |
 
 ## Updating
 
 You have two options for updating: use the automatic update script (recommended) or do the update steps manually.
 
 <Tabs>
+    <TabItem value="Docker">
+        A [Docker install](./advanced/docker) updates by pulling the new image. From the directory containing your `compose.yml`, run:
+
+        ```sh
+        docker compose pull
+        docker compose up -d
+        ```
+
+        Database migrations run automatically when the new container starts.
+    </TabItem>
     <TabItem value="Update script (recommended)">
         Simply run the command below and the update script will guide you through the process:
 
@@ -46,7 +62,15 @@ You have two options for updating: use the automatic update script (recommended)
         unpack the archive into your current folder.
 
         ```sh
-        curl -L https://github.com/pelican-dev/panel/releases/latest/download/panel.tar.gz | sudo tar -xzv
+        curl -L https://github.com/pelican/panel/releases/latest/download/panel.tar.gz | sudo tar -xzv
+        ```
+
+        To verify the archive before extracting it, download it together with its `checksum.txt` release asset instead:
+
+        ```sh
+        sudo curl -fLO https://github.com/pelican/panel/releases/latest/download/panel.tar.gz
+        sudo curl -fLO https://github.com/pelican/panel/releases/latest/download/checksum.txt
+        sudo sha256sum -c checksum.txt && sudo tar -xzvf panel.tar.gz && sudo rm panel.tar.gz checksum.txt
         ```
 
         Once the archive is downloaded and extracted we need to set the correct permissions on the cache and storage directories to avoid
@@ -72,11 +96,11 @@ You have two options for updating: use the automatic update script (recommended)
         sudo php artisan storage:link
         ```
 
-        ## Cache components
+        ### Cache components
 
         ```sh
         sudo php artisan optimize:clear
-        sudo php artisan optimize
+        sudo php artisan filament:optimize
         ```
 
         ### Update Database
@@ -87,6 +111,15 @@ You have two options for updating: use the automatic update script (recommended)
 
         ```sh
         sudo php artisan migrate --seed --force
+        ```
+
+        ### Themes
+
+        If you previously had any themes installed you need to manually build the panel assets again:
+
+        ```sh
+        yarn install
+        yarn build
         ```
 
         ### Set Permissions
@@ -129,3 +162,4 @@ You have two options for updating: use the automatic update script (recommended)
         ```
     </TabItem>
 </Tabs>
+

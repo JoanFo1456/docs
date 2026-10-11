@@ -32,6 +32,8 @@ const sidebars: SidebarsConfig = {
             'panel/advanced/artisan',
             'panel/advanced/docker',
             'panel/advanced/cloudflare-tunnel',
+            'panel/advanced/api-docs',
+            'panel/advanced/plugins',
           ]
         }
       ],
@@ -47,6 +49,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Eggs',
+      items: [
+        'eggs/creating-a-custom-egg',
+        'eggs/creating-a-custom-yolk',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Guides',
       items: [
         'guides/docker',
@@ -56,8 +66,20 @@ const sidebars: SidebarsConfig = {
         'guides/database-hosts',
         'guides/change-panel-domain',
         'guides/uninstalling',
+        'guides/migrating-from-pterodactyl',
+        'guides/translating',
+      
+        {
+          type: 'category',
+          label: 'Disk Quotas',
+          items: [
+            'guides/disk-quotas/about',
+            'guides/disk-quotas/ext4-xfs',
+          ]
+        }
       ],
     },
+    'versioning',
     'troubleshooting',
     'comparison',
     'glossary'
