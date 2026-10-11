@@ -48,7 +48,7 @@ esac
 [ -d /run/systemd/system ] && ok "systemd" || fail "systemd is not running. The queue worker needs systemd."
 
 missing=()
-for tool in curl tar unzip sha256sum mysql crontab systemctl php; do
+for tool in curl tar unzip sha256sum sha384sum mysql crontab systemctl php; do
   command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
 done
 [ ${#missing[@]} -eq 0 ] && ok "Required tools installed" || fail "Missing tools: ${missing[*]}. Install them first."
@@ -124,11 +124,12 @@ if command -v php >/dev/null 2>&1; then
     if command -v composer >/dev/null 2>&1; then
       composer=(composer)
     elif curl -fsSL -o "$tmp/composer-setup.php" https://getcomposer.org/installer \
+      && [ "$(curl -fsSL https://composer.github.io/installer.sig)" = "$(sha384sum "$tmp/composer-setup.php" | awk '{print $1}')" ] \
       && php "$tmp/composer-setup.php" --quiet --install-dir="$tmp" --filename=composer.phar; then
       composer=(php "$tmp/composer.phar")
     else
       composer=()
-      fail "Couldn't download Composer."
+      fail "Couldn't download Composer or verify its installer signature."
     fi
 
     # Compares PHP and every required extension against Pelican's own composer.json and composer.lock.
