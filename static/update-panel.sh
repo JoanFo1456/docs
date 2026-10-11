@@ -114,7 +114,8 @@ on_exit() {
 trap on_exit EXIT
 
 env_get() {
-  grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | tr -d "\"'" || true
+  # Strip only matching surrounding quotes, so quotes inside a value (e.g. a password) are kept.
+  grep -E "^$1=" "$install_dir/.env" | tail -n1 | cut -d '=' -f 2- | sed -E -e 's/^"(.*)"$/\1/' -e t -e "s/^'(.*)'$/\1/" || true
 }
 
 errors=()
