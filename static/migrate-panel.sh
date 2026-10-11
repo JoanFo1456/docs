@@ -181,16 +181,20 @@ if $have_env && command -v mysql >/dev/null 2>&1; then
       version_ge "$db_version" "$MIN_MYSQL" && ok "MySQL $db_version" || fail "MySQL $db_version is too old. Pelican needs MySQL $MIN_MYSQL or newer."
     fi
 
-    # ponytail: matches privilege names anywhere in the grants, doesn't check which database they apply to.
-    grants=$(sql "SHOW GRANTS FOR CURRENT_USER()" | tr '[:lower:]' '[:upper:]' || true)
-    if ! grep -q "ALL PRIVILEGES" <<<"$grants"; then
-      missing=()
-      for priv in SELECT INSERT UPDATE DELETE CREATE ALTER DROP INDEX REFERENCES; do
-        grep -qw "$priv" <<<"$grants" || missing+=("$priv")
-      done
-      [ ${#missing[@]} -eq 0 ] && ok "Database user privileges" || fail "Database user '$db_user' is missing privileges: ${missing[*]}"
+    # Effective global and database-level privileges of this user on $db_name, including wildcard grants like `pan%`.
+    privileges=$(sql "SELECT DISTINCT PRIVILEGE_TYPE FROM (
+        SELECT GRANTEE, PRIVILEGE_TYPE FROM information_schema.USER_PRIVILEGES
+        UNION ALL
+        SELECT GRANTEE, PRIVILEGE_TYPE FROM information_schema.SCHEMA_PRIVILEGES WHERE DATABASE() LIKE TABLE_SCHEMA
+      ) p WHERE GRANTEE = CONCAT('''', SUBSTRING_INDEX(CURRENT_USER(), '@', 1), '''@''', SUBSTRING_INDEX(CURRENT_USER(), '@', -1), '''')" || true)
+    missing=()
+    for priv in SELECT INSERT UPDATE DELETE CREATE ALTER DROP INDEX REFERENCES; do
+      grep -qx "$priv" <<<"$privileges" || missing+=("$priv")
+    done
+    if [ ${#missing[@]} -eq 0 ]; then
+      ok "Database user privileges on '$db_name'"
     else
-      ok "Database user privileges"
+      fail "Database user '$db_user' is missing privileges on '$db_name': ${missing[*]}. Grant them directly to the user (privileges from roles aren't counted)."
     fi
 
     sql "SELECT 1 FROM migrations LIMIT 1" >/dev/null 2>&1 && ok "Pterodactyl tables found" || fail "No migrations table in '$db_name'. Is this the Pterodactyl database?"
