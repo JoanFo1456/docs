@@ -67,6 +67,8 @@ Your game servers keep running and keep their files.
         docker compose cp /var/www/pterodactyl/.env panel:/pelican-data/.env
         ```
 
+        The container serves the Panel on ports 80 and 443, so stop the webserver that served Pterodactyl first (for example `sudo systemctl disable --now nginx`).
+
         Start it. The database is upgraded on startup:
 
         ```sh
