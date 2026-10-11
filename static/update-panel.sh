@@ -303,10 +303,16 @@ if [[ -n "$db_file" ]]; then
     "$db_file" "$backup_dir/$(basename "$db_file").backup"
   echo "  Backed up SQLite database"
 elif [[ -n "$dump_cmd" ]]; then
-  db_host=$(env_get DB_HOST)
-  db_port=$(env_get DB_PORT)
-  MYSQL_PWD="$(env_get DB_PASSWORD)" "$dump_cmd" --single-transaction --no-tablespaces \
-    -h "${db_host:-127.0.0.1}" -P "${db_port:-3306}" \
+  db_socket=$(env_get DB_SOCKET)
+  if [[ -n "$db_socket" ]]; then
+    # Same as Laravel: DB_SOCKET (unix_socket) wins over host/port.
+    db_target=(--socket="$db_socket")
+  else
+    db_host=$(env_get DB_HOST)
+    db_port=$(env_get DB_PORT)
+    db_target=(-h "${db_host:-127.0.0.1}" -P "${db_port:-3306}")
+  fi
+  MYSQL_PWD="$(env_get DB_PASSWORD)" "$dump_cmd" --single-transaction --no-tablespaces "${db_target[@]}" \
     -u "$(env_get DB_USERNAME)" "$(env_get DB_DATABASE)" > "$backup_dir/database.sql"
   echo "  Backed up $db_connection database"
 fi
