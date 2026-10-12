@@ -140,7 +140,7 @@ The default file upload limit is 2MB. To raise it, copy the image's Caddyfile an
 podman run --rm --entrypoint cat ghcr.io/pelican/panel:latest /etc/caddy/Caddyfile > ~/pelican/Caddyfile
 ```
 
-Allow containers to read it under SELinux:
+Allow containers to read it under SELinux (`semanage` is in the `policycoreutils-python-utils` package):
 
 ```sh
 sudo semanage fcontext -a -t container_file_t "/home/your-user/pelican/Caddyfile"

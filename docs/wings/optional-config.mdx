@@ -161,7 +161,7 @@ Wings can use rootful Podman in place of Docker through Podman's Docker-compatib
 1. Install Podman's Docker compatibility package and enable the socket. This makes `/var/run/docker.sock` point at Podman, so skip the Docker install step.
 
     ```sh
-    sudo dnf install podman podman-docker
+    sudo dnf install podman podman-docker policycoreutils-python-utils
     sudo systemctl enable --now podman.socket
     ```
 
