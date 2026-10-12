@@ -10,7 +10,7 @@ Updating Wings is a painless process and should take less than a minute to compl
 
 | Panel Version | Wings Version | Supported |
 |:-------------:|:-------------:|:---------:|
-|1.0.0+         | 1.0.0+        |     ✅︎  |
+|      1.x      |      1.x      |    ✅︎     |
 
 ## Download Update
 
@@ -20,7 +20,7 @@ Updating Wings is a painless process and should take less than a minute to compl
 
 <Tabs>
     <TabItem value="Self-update">
-        First, you need to run the Wings auto-updater, which is included starting from **beta9**.
+        First, run the Wings auto-updater.
 
         ```sh
         sudo wings update
@@ -31,7 +31,7 @@ Updating Wings is a painless process and should take less than a minute to compl
 
         ```sh
         sudo systemctl stop wings
-        sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
+        sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
         sudo chmod u+x /usr/local/bin/wings
         ```
     </TabItem>

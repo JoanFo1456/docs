@@ -6,6 +6,11 @@ import Admonition from '@theme/Admonition';
 This software will not work on Windows operating systems.
 </Admonition>
 
+<Admonition type="tip">
+    It is always recommended to keep the server files on a separate partition.  
+    This prevents the root partition from filling and causing the host to crash, potentially becoming unbootable.
+</Admonition>
+
 ## Supported Systems
 
 The following is a list of supported operating systems. Please be aware that this is not an exhaustive list,
@@ -14,18 +19,23 @@ You are responsible for determining which packages may be necessary on those sys
 high probability that new releases of the supported OSes below will work just fine, you are not restricted to
 only the versions listed below.
 
-| Operating System | Version | Supported | Notes                                                                 |
-|:----------------:|:--------:|:---------:|:---------------------------------------------------------------------:|
-| **Ubuntu**       | 22.04    |     ✅︎︎    |                                                                      |
-|                  | **24.04**|     ✅︎    |   Documentation written assuming Ubuntu 24.04 as the base OS.        |
-| **Alma Linux**   | 10       |     ✅︎    |                                                                      |
-|                  | 9        |     ✅︎    |                                                                      |
-|                  | 8        |     ✅︎    |                                                                      |
-| **Rocky Linux**  | 9        |     ✅︎    |                                                                      |
-|                  | 8        |     ✅︎    |                                                                      |
-| **CentOS**       | 10       |     ✅︎    |                                                                      |
-| **Debian**       | 11       |     ✅︎    |                                                                      |
-|                  | 12       |     ✅︎    |                                                                      |
+This documentation assumes a Debian/Ubuntu based OS with apt as package manager.
+
+| Operating System | Version  | Supported |
+|:----------------:|:--------:|:---------:|
+| **Ubuntu**       | 22.04    |     ✅︎︎    |
+|                  | 24.04    |     ✅︎    |
+|                  | 26.04    |     ✅︎    |
+| **Debian**       | 11       |     ✅︎    |
+|                  | 12       |     ✅︎    |
+|                  | 13       |     ✅︎    |
+| **Alma Linux**   | 8        |     ✅︎    |
+|                  | 9        |     ✅︎    |
+|                  | 10       |     ✅︎    |
+| **Rocky Linux**  | 8        |     ✅︎    |
+|                  | 9        |     ✅︎    |
+|                  | 10       |     ✅︎    |
+| **CentOS**       | 10       |     ✅︎    |
 
 ## System Requirements
 
@@ -66,7 +76,7 @@ run the commands below, which will create the base directory and download the wi
 
 ```sh
 sudo mkdir -p /etc/pelican /var/run/wings
-sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
+sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican/wings/releases/latest/download/wings_linux_$([[ "$(uname -m)" == "x86_64" ]] && echo "amd64" || echo "arm64")"
 sudo chmod u+x /usr/local/bin/wings
 ```
 
