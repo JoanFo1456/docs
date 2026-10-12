@@ -200,7 +200,7 @@ No custom Caddyfile is needed for this setup. An example `compose.yml` for hosti
 ```yml {8,16-18} title="compose.yml"
 services:
   panel:
-    image: ghcr.io/pelican-dev/panel:latest
+    image: ghcr.io/pelican/panel:latest
     restart: always
     networks:
       - default
