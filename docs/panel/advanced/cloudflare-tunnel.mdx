@@ -21,10 +21,10 @@ This page only covers the panel. Wings still needs to be reachable by your users
 
 ## Create the Tunnel
 
-1. Open the [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com/) and go to **Networks** → **Tunnels**.
+1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/) and go to **Networking** → **Tunnels**. (In the older Zero Trust dashboard this is **Networks** → **Tunnels**.)
 2. Click **Create a tunnel**, choose **Cloudflared**, give it a name (e.g. `pelican`) and save it.
 3. On the install screen, copy the token from the shown command (the long string after `--token`). You do not need to install anything on the host, Docker will run `cloudflared` for you.
-4. Add a public hostname (called **Published application routes** in newer versions of the dashboard):
+4. Under **Routes**, click **Add route** and choose **Published application** (called a public hostname in older versions of the dashboard):
     - **Subdomain** and **Domain**: the hostname you want the panel on, e.g. `panel.example.com`
     - **Service Type**: `HTTP`
     - **URL**: `panel:80`
@@ -134,4 +134,4 @@ Either way, keep in mind:
 ## Security
 
 - Do not commit `.env`. Anyone with the tunnel token can run your tunnel.
-- Consider putting a [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/self-hosted-public-app/) policy in front of the panel, at least until the installer has been completed.
+- Consider putting a [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/self-hosted-public-app/) policy in front of the panel, at least until the installer has been completed. Wings calls the panel's API at `/api/remote` and cannot complete an Access login, so before connecting Wings either remove the policy or add a Bypass policy for `panel.example.com/api/remote`.
