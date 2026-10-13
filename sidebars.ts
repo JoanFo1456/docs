@@ -69,6 +69,7 @@ const sidebars: SidebarsConfig = {
         'guides/uninstalling',
         'guides/migrating-from-pterodactyl',
         'guides/translating',
+        'guides/troubleshooting',
       
         {
           type: 'category',
@@ -81,9 +82,8 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'versioning',
-    'troubleshooting',
     'comparison',
-    'glossary'
+    'contributors',
   ],
 };
 
