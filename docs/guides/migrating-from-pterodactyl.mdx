@@ -53,6 +53,7 @@ Your game servers keep running and keep their files.
 
         ```yml
         APP_INSTALLED: "true" # upgrade the database instead of opening the web installer
+        DB_CONNECTION: mysql # or mariadb on MariaDB. Without it Pelican falls back to SQLite
         # Only if MySQL and Redis run on this machine:
         DB_HOST: host.docker.internal
         REDIS_HOST: host.docker.internal
@@ -113,7 +114,7 @@ grep '^DB_' .env
 mysqldump -h <DB_HOST> -P <DB_PORT> -u <DB_USERNAME> -p --single-transaction --no-tablespaces <DB_DATABASE> > ~/pterodactyl-backup.sql
 ```
 
-**Install Pelican.** Follow [Getting Started](../panel/getting-started) up to (and including) **Install Composer**, but don't run the web installer. Then copy your `.env` and upgrade the database:
+**Install Pelican.** Follow [Getting Started](../panel/getting-started) up to (and including) **Install Composer**, but don't run the web installer. Then copy your `.env` and upgrade the database. Make sure `.env` has `DB_CONNECTION=mysql`, or `DB_CONNECTION=mariadb` on MariaDB: Pterodactyl didn't need it, but without it Pelican falls back to SQLite.
 
 ```sh
 sudo cp /var/www/pterodactyl/.env /var/www/pelican/.env

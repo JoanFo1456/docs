@@ -83,9 +83,12 @@ else
   app_key=$(env_get APP_KEY)
   [[ "$app_key" == base64:* ]] && ok "APP_KEY is set" || fail "APP_KEY in $env_file is missing or invalid. Without it, encrypted data can't be read."
 
+  # Often missing, since Pterodactyl defaults to mysql. Pelican defaults to sqlite, so it's set from the detected server below.
   db_connection=$(env_get DB_CONNECTION)
-  db_connection=${db_connection:-mysql}
-  [ "$db_connection" = "mysql" ] && ok "DB_CONNECTION is mysql" || fail "DB_CONNECTION is '$db_connection', expected 'mysql'."
+  case "$db_connection" in
+    ""|mysql|mariadb) ;;
+    *) fail "DB_CONNECTION is '$db_connection' in $env_file. Pelican can only migrate a MySQL or MariaDB database." ;;
+  esac
 fi
 
 # --- Pelican target ---------------------------------------------------------
@@ -177,10 +180,13 @@ if $have_env && command -v mysql >/dev/null 2>&1; then
 
     db_version=$(grep -oE '^[0-9]+\.[0-9]+(\.[0-9]+)?' <<<"$db_server")
     if [[ "$db_server" == *MariaDB* ]]; then
+      db_connection=mariadb
       version_ge "$db_version" "$MIN_MARIADB" && ok "MariaDB $db_version" || fail "MariaDB $db_version is too old. Pelican needs MariaDB $MIN_MARIADB or newer."
     else
+      db_connection=mysql
       version_ge "$db_version" "$MIN_MYSQL" && ok "MySQL $db_version" || fail "MySQL $db_version is too old. Pelican needs MySQL $MIN_MYSQL or newer."
     fi
+    ok "DB_CONNECTION will be set to $db_connection"
 
     # Effective global and database-level privileges of this user on $db_name, including wildcard grants like `pan%`.
     privileges=$(sql "SELECT DISTINCT PRIVILEGE_TYPE FROM (
@@ -294,7 +300,8 @@ mkdir -p "$PELICAN_DIR"
 cp -a "$tmp/panel/." "$PELICAN_DIR/"
 cd "$PELICAN_DIR"
 cp "$env_file" .env
-sed -i -E '/^(HASHIDS_SALT|HASHIDS_LENGTH|APP_THEME|APP_ENVIRONMENT_ONLY)=/d' .env
+sed -i -E '/^(HASHIDS_SALT|HASHIDS_LENGTH|APP_THEME|APP_ENVIRONMENT_ONLY|DB_CONNECTION)=/d' .env
+printf '\nDB_CONNECTION=%s\n' "$db_connection" >> .env  # leading newline in case .env lacks a trailing one
 COMPOSER_ALLOW_SUPERUSER=1 "${composer[@]}" install --no-dev --optimize-autoloader --no-interaction
 rm -f bootstrap/cache/config.php
 
