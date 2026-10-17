@@ -41,7 +41,16 @@ You have two options for updating: use the automatic update script (recommended)
         Simply run the command below and the update script will guide you through the process:
 
         ```sh
-        sudo bash -c "$(curl -fsSL https://pelican.dev/updatePanel.sh)"
+        sudo bash -c "$(curl -fsSL https://pelican.dev/update-panel.sh)"
+        ```
+
+        The script checks your PHP version, extensions, and disk space and verifies the download before it touches the panel.
+        Your `.env`, storage, plugins, and database are kept, and a backup is saved to a `backup_<timestamp>` folder inside the panel directory.
+
+        To run it without prompts, for example from automation, pass `--yes` (and `--dir` if the panel is not in `/var/www/pelican`):
+
+        ```sh
+        sudo bash -c "$(curl -fsSL https://pelican.dev/update-panel.sh)" update-panel --yes --dir /var/www/pelican
         ```
     </TabItem>
     <TabItem value="Manual update">

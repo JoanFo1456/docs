@@ -49,7 +49,7 @@ AWS_BACKUPS_STORAGE_CLASS=
 
 ## Reverse Proxy Setup
 
-When running Pelican behind a reverse proxy, such as [Cloudflare's Flexible SSL](https://support.cloudflare.com/hc/en-us/articles/200170416-What-do-the-SSL-options-mean-)
+When running Pelican behind a reverse proxy, such as [Cloudflare's Flexible SSL](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/)
 or NGINX/Apache/Caddy, etc., you will need to make a quick modification to the Panel to ensure things continue to work as expected. By default, when using these reverse proxies,
 your Panel will not correctly handle requests. You'll most likely be unable to login or see security warnings in your browser console as it attempts to load insecure assets.
 This is because the internal logic the Panel uses to determine how links should be generated thinks it is running over HTTP and not over HTTPS.

@@ -153,3 +153,45 @@ More commonly discussed values.
 | detect_clean_exit_as_crash |     true      | Mark server as crashed if it's stopped without user interaction, e.g., not pressing stop button                                                            |
 | (crash detection) timeout  |      60       | Timeout between server crashes that will not cause the server to be automatically restarted                                                                |
 | check_permissions_on_boot  |     true      | Check all file permissions on each boot. Disable this when you have a very large amount of files and the server startup is hanging on checking permissions |
+
+## Running on Podman
+
+Wings can use rootful Podman in place of Docker through Podman's Docker-compatible API. Wings runs as root, so it uses the system Podman socket. These steps assume a Fedora, RHEL, or Alma/Rocky Linux host with SELinux enforcing.
+
+1. Install Podman's Docker compatibility package and enable the socket. This makes `/var/run/docker.sock` point at Podman, so skip the Docker install step.
+
+    ```sh
+    sudo dnf install podman podman-docker policycoreutils-python-utils
+    sudo systemctl enable --now podman.socket
+    ```
+
+2. Install and configure Wings as described in [Installing Wings](/docs/wings/install), but in `wings.service` replace the three lines that reference `docker.service` with the following, otherwise systemd refuses to start it (`Unit docker.service not found`):
+
+    ```ini title="/etc/systemd/system/wings.service"
+    After=podman.socket
+    Requires=podman.socket
+    ```
+
+3. Podman doesn't support Docker's `local` log driver, so server installs fail with `invalid log driver`. Wings also mounts its temporary directory into install containers, and SELinux blocks containers from reading `/tmp/pelican`. In `/etc/pelican/config.yml`, change these two values:
+
+    ```yaml title="/etc/pelican/config.yml"
+    system:
+      tmp_directory: /var/lib/pelican/tmp
+    docker:
+      log_config:
+        type: k8s-file
+    ```
+
+4. Allow containers to use the Wings data directories under SELinux, then restart Wings:
+
+    ```sh
+    sudo mkdir -p /var/lib/pelican/tmp
+    sudo semanage fcontext -a -t container_file_t "/var/lib/pelican(/.*)?"
+    sudo restorecon -R /var/lib/pelican
+    sudo systemctl daemon-reload
+    sudo systemctl restart wings
+    ```
+
+:::warning
+Keep the OOM killer enabled on every server. Podman uses cgroup v2, which can't disable it, so a server with the OOM killer disabled fails to install or start with `cannot disable OOM killer with cgroupv2`.
+:::

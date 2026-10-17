@@ -31,6 +31,8 @@ const sidebars: SidebarsConfig = {
             'panel/advanced/mysql',
             'panel/advanced/artisan',
             'panel/advanced/docker',
+            'panel/advanced/podman',
+            'panel/advanced/cloudflare-tunnel',
             'panel/advanced/api-docs',
             'panel/advanced/plugins',
           ]
@@ -67,6 +69,7 @@ const sidebars: SidebarsConfig = {
         'guides/uninstalling',
         'guides/migrating-from-pterodactyl',
         'guides/translating',
+        'guides/troubleshooting',
       
         {
           type: 'category',
@@ -79,9 +82,8 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'versioning',
-    'troubleshooting',
     'comparison',
-    'glossary'
+    'contributors',
   ],
 };
 

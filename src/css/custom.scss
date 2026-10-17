@@ -163,3 +163,10 @@ html[data-theme='light'] .content_node_modules--pnpm-\@docusaurus\+theme-classic
   color: white;
   padding: 1rem;
 }
+
+// The JetBrains logo has black lettering, so give it a light backing in dark mode
+html[data-theme='dark'] img[src$='/jetbrains.svg'] {
+  background: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+}
