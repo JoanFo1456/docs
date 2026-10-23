@@ -229,6 +229,12 @@ if [[ -n "$fpm_versions" && " $fpm_versions" != *" $cli_php "* ]]; then
   warnings+=("PHP CLI is $cli_php but PHP-FPM is running ${fpm_versions% }, your web server may use a different PHP than this update checked")
 fi
 
+# Composer before 2.8.10 floods the output with deprecation notices on PHP 8.4+.
+composer_version=$(composer --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+if [[ -n "$composer_version" ]] && printf '%s\n' 8.4 "$cli_php" | sort -VC && ! printf '%s\n' 2.8.10 "$composer_version" | sort -VC; then
+  warnings+=("Composer $composer_version prints deprecation notices on PHP $cli_php, they are harmless. Silence them with: composer self-update")
+fi
+
 db_connection=$(env_get DB_CONNECTION)
 db_connection="${db_connection:-sqlite}"
 db_file=""
