@@ -44,6 +44,7 @@ const sidebars: SidebarsConfig = {
       label: 'Wings',
       items: [
         'wings/install',
+        'wings/windows',
         'wings/optional-config',
         'wings/update'
       ],

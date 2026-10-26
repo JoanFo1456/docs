@@ -1,0 +1,255 @@
+import Admonition from '@theme/Admonition';
+
+# Installing Wings on Windows
+
+<Admonition type="warning">
+    Disk quotas are not available on Windows, see [Limitations](#limitations).
+</Admonition>
+
+<Admonition type="tip">
+    It is recommended to keep the server files on a separate drive.  
+    This prevents the system drive from filling up and causing Windows to become unstable.
+</Admonition>
+
+## Supported Systems
+
+Wings has been developed and tested on Windows 11. Any 64-bit version of Windows that can run Docker Desktop with the WSL 2 backend should work.
+
+
+| Operating System | Architecture | Supported |
+|:----------------:|:------------:|:---------:|
+| **Windows 11**   | x64          |     ✅︎    |
+| **Windows 11**   | ARM64        |     ❓︎    |
+
+All items on the table with a question mark means that it should work, but it hasn't been tested yet.
+
+## System Requirements
+
+To run Wings, you will need a Windows machine capable of running Docker Desktop with Linux containers. This means that hardware virtualization
+must be enabled in your BIOS/UEFI, and that Windows can use WSL 2. If you are using a virtual machine, nested virtualization must be enabled.
+
+The easiest way to check is to open the Task Manager, go to the Performance tab, select CPU and make sure that `Virtualization` says `Enabled`.
+
+### Installing Docker
+
+Wings requires Docker Desktop. Open a PowerShell window and run the command below to install it, or download it from the
+[official Docker website](https://www.docker.com/products/docker-desktop/).
+
+```powershell
+winget install -e --id Docker.DockerDesktop
+```
+
+Start Docker Desktop once and accept the license agreement. Then make sure that **Use the WSL 2 based engine** is enabled in `Settings` → `General`,
+and that Docker Desktop is running in **Linux containers** mode. If you right-click the Docker icon in the system tray and see `Switch to Windows containers...`, you are already in the right mode.
+
+#### Start Docker on Boot
+
+Open Docker Desktop and enable **Start Docker Desktop when you sign in to your computer** in `Settings` → `General`.
+
+<Admonition type="warning">
+    Docker Desktop starts when a user signs in, not when the machine itself boots. If the machine restarts, nothing will start until someone signs in.
+    For a machine that should come back on its own after a restart, set up
+    [automatic sign-in](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon) for the account that runs Docker Desktop and Wings.
+</Admonition>
+
+### Installing Wings
+
+The first step for installing Wings is to ensure we have the required directory structure setup. To do so,
+open PowerShell **as Administrator** and run the commands below, which will create the base directories and download the Wings executable.
+
+```powershell
+New-Item -ItemType Directory -Force "$env:ProgramFiles\Pelican", "$env:ProgramData\Pelican" | Out-Null
+$arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "amd64" }
+Invoke-WebRequest -Uri "https://github.com/pelican/wings/releases/latest/download/wings_windows_$arch.exe" -OutFile "$env:ProgramFiles\Pelican\wings.exe"
+```
+
+Wings stores all the required data on `C:\ProgramData\Pelican`. However, you can change the server drive directory on the wings config.
+
+#### Making the `wings` command available everywhere
+
+Right now you have to type the full path to run Wings. To be able to run `wings` from any PowerShell or Command Prompt window, add the folder
+that contains `wings.exe` to the system `PATH`. Open PowerShell **as Administrator** and run the commands below.
+
+```powershell
+$dir  = "$env:ProgramFiles\Pelican"
+$path = [Environment]::GetEnvironmentVariable("Path", "Machine")
+if (($path -split ";") -notcontains $dir) { [Environment]::SetEnvironmentVariable("Path", "$path;$dir", "Machine") }
+```
+
+Close all open terminal windows and open a new one, windows that were already open do not see the change. You can check that it worked with the command below.
+
+```powershell
+wings version
+```
+
+<Admonition type="tip">
+    To add it for your own user only, which does not need Administrator, replace both `"Machine"` values with `"User"`.
+</Admonition>
+
+From now on you can use `wings` instead of `& "$env:ProgramFiles\Pelican\wings.exe"` in the commands on this page, for example `wings --debug`.
+
+### Configure
+
+Once you have installed Wings and the required components, the next step is to create a node on your installed Panel.
+Go to your Panel administrative view, select Nodes from the sidebar, and on the right side click Create New button.
+
+After you have created a node, click on it and there will be a tab called Configuration.
+Copy the code block content, create a new file at `C:\ProgramData\Pelican\config.yml`, paste the content into it and save.
+
+
+<Admonition type="warning" title="Using ssl?">
+    If your Panel is using SSL, then Wings must also use SSL.  
+
+    Set `api.ssl.cert` and `api.ssl.key` to the full Windows paths of your certificate and key, in single quotes.
+    To let Wings create the certificate for you, see [Using certificates](#using-certificates).
+</Admonition>
+
+#### Using certificates
+
+Wings can request and renew a free [Let's Encrypt](https://letsencrypt.org/) certificate on its own, so you do not need any other tool to create one.
+You do not need to set `api.ssl.cert` and `api.ssl.key` when you use this.
+
+Before you start, make sure that:
+
+- You have a domain name (for example `node.example.com`) that points to the public IP address of this computer.
+- Port `80` on this computer is free and reachable from the internet. Wings needs it to prove that you own the domain. Forward it on your router if needed, and allow it in the firewall.
+
+Allow port `80` in the firewall, using an elevated PowerShell window.
+
+```powershell
+New-NetFirewallRule -DisplayName "Wings certificate (HTTP)" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+```
+
+Then start Wings with your domain. The first start requests the certificate, which takes a few seconds.
+
+```powershell
+& "$env:ProgramFiles\Pelican\wings.exe" --auto-tls --tls-hostname node.example.com
+```
+
+If you run Wings as a service, see [Daemonizing](#daemonizing-using-a-windows-service), change the command the service starts Wings with and restart it.
+Run the commands below in a PowerShell window opened as Administrator. If you installed the service with `--config`, keep that option in the command.
+
+```powershell
+$service = Get-CimInstance Win32_Service -Filter "Name='Wings'"
+Invoke-CimMethod -InputObject $service -MethodName Change -Arguments @{ PathName = "`"$env:ProgramFiles\Pelican\wings.exe`" --auto-tls --tls-hostname node.example.com" }
+wings service stop
+wings service start
+```
+
+The certificate is stored in the `.tls-cache` folder inside your `root_directory` (by default `C:\ProgramData\Pelican\.tls-cache`) and is renewed automatically while Wings is running.
+
+<Admonition type="info" title="Local or private networks">
+    A certificate from Let's Encrypt cannot be issued for a computer that is not reachable from the internet. In that case you can create your own certificate and
+    set `api.ssl.cert` and `api.ssl.key` to its files, or disable SSL on both the Panel and Wings.
+</Admonition>
+
+#### Optional: Move the data to another drive
+
+Every directory can be changed in the `system` section of `config.yml`, for example:
+
+```yaml title="C:\ProgramData\Pelican\config.yml"
+system:
+  root_directory: 'D:\Pelican'
+  data: 'D:\Pelican\volumes'
+  log_directory: 'D:\Pelican\logs'
+  archive_directory: 'D:\Pelican\archives'
+  backup_directory: 'D:\Pelican\backups'
+  tmp_directory: 'D:\Pelican\tmp'
+```
+
+The drive must be a local drive that Docker Desktop can access.
+
+### Firewall
+
+Windows blocks incoming connections by default. Run the command below in an elevated PowerShell window to allow the Wings API and SFTP ports.
+Change the ports if you changed them in your node settings, and add a rule for the ports of your game servers too.
+
+```powershell
+New-NetFirewallRule -DisplayName "Wings" -Direction Inbound -Protocol TCP -LocalPort 8080,2022 -Action Allow
+```
+
+### Starting Wings
+
+To start Wings, simply run the command below, which will start it in a debug mode.
+Once you confirmed that it is running without errors, use `CTRL+C` to terminate the process and daemonize it by following the instructions below.
+Depending on your internet connection pulling and starting Wings for the first time may take a few minutes.
+
+```powershell
+wings --debug
+```
+
+If your configuration is not in the default location, pass it with `--config`.
+
+### Daemonizing (using a Windows service)
+
+Wings can install itself as a Windows service, the Windows counterpart of a systemd service. The service starts automatically with the computer and
+restarts Wings when it stops unexpectedly. Make sure that Wings runs without errors before doing this.
+
+Open PowerShell **as Administrator** and run the commands below.
+
+```powershell
+wings service install
+wings service start
+```
+
+If your configuration is not in the default location, pass it when installing the service, for example `wings service install --config "D:\Pelican\config.yml"`.
+
+You can manage the service with the following commands, or with the Services app.
+
+```powershell
+wings service stop        # stop Wings
+wings service start       # start Wings
+wings service uninstall   # stop and remove the service
+```
+
+Just like on Linux, Wings stops when it cannot reach Docker, and the service restarts it after a few seconds, so it can already be started before Docker is ready.
+
+<Admonition type="info" title="Docker Desktop and the service">
+    Docker Desktop starts when a user signs in, not when the computer boots. Until then the service keeps restarting Wings,
+    and Wings starts working as soon as Docker is available.
+</Admonition>
+
+## Updating Wings
+
+Running servers **will not** be affected.
+
+Open PowerShell **as Administrator** and run the Wings updater. It downloads the latest release, checks it and replaces `wings.exe`. Wings can keep running while it updates.
+
+```powershell
+wings update
+```
+
+If `wings` is not available in your `PATH`, run `& "$env:ProgramFiles\Pelican\wings.exe" update` instead.
+Then restart Wings so it runs the new version.
+
+```powershell
+wings service stop
+wings service start
+```
+
+The updater keeps the previous executable next to the new one as `wings.exe.<number>.old` and deletes it the next time Wings starts.
+
+#### Manual update
+
+If you prefer, you can also download the new executable yourself.
+
+```powershell
+wings service stop
+$arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "amd64" }
+Invoke-WebRequest -Uri "https://github.com/pelican/wings/releases/latest/download/wings_windows_$arch.exe" -OutFile "$env:ProgramFiles\Pelican\wings.exe"
+wings service start
+```
+
+## Limitations
+
+Wings behaves the same as on Linux, with these differences:
+
+- **No disk quotas.** Filesystem quotas are a Linux feature. Disk usage is still tracked and limits are enforced by Wings, but the usage is calculated by scanning the server directory.
+- **Reserved names.** Windows does not allow file names such as `CON` or `NUL`, or names containing `:`, in server files.
+
+## Troubleshooting
+
+- **Wings exits right away:** Docker Desktop is probably not running yet. Start it and check that `docker info` works in PowerShell. When Wings runs as a service, the service restarts it automatically and it tries again.
+- **`no matching manifest for windows/amd64`:** Wings can only reach the Windows engine of Docker Desktop, which cannot run Linux images. Wings uses both engines when both are running, so make sure the Linux engine is running too, or set `DOCKER_HOST` to `npipe:////./pipe/dockerDesktopLinuxEngine`.
+- **Files are saved to `C:\var\lib\pelican\volumes`:** The `data:` line with the Linux path is still in your `config.yml`. Remove it or set a Windows path.
+- **Changes in the config are ignored:** Wings only reads `config.yml` on startup. Restart the service with `wings service stop` and `wings service start`.
