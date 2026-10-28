@@ -253,3 +253,4 @@ Wings behaves the same as on Linux, with these differences:
 - **`no matching manifest for windows/amd64`:** Wings can only reach the Windows engine of Docker Desktop, which cannot run Linux images. Wings uses both engines when both are running, so make sure the Linux engine is running too, or set `DOCKER_HOST` to `npipe:////./pipe/dockerDesktopLinuxEngine`.
 - **Files are saved to `C:\var\lib\pelican\volumes`:** The `data:` line with the Linux path is still in your `config.yml`. Remove it or set a Windows path.
 - **Changes in the config are ignored:** Wings only reads `config.yml` on startup. Restart the service with `wings service stop` and `wings service start`.
+- **`failed to open file for configuration ... Access is denied`:** Wings has to run as Administrator. Files created by Windows containers cannot be changed by a normal user. The Windows service already runs with the needed rights.
